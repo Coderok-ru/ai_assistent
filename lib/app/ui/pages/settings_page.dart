@@ -83,86 +83,81 @@ class SettingsPage extends GetView<SettingsController> {
             ),
             const SizedBox(height: 8),
             Obx(() {
-              final apiKey = controller.apiKey.value;
               final modelsError = controller.modelsError.value;
-              if (apiKey.isEmpty) {
+              final models = controller.visibleModels;
+              final selected = controller.selectedModel;
+              if (controller.isLoadingModels.value) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (modelsError.isNotEmpty) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   child: Center(
                     child: Text(
-                      'Введите API-ключ для выбора модели',
+                      modelsError,
                       style: TextStyle(color: Colors.red[700], fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                   ),
                 );
               }
-              if (modelsError.isNotEmpty) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: Center(
-                        child: Text(
-                          modelsError,
-                          style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: controller.fetchModelsFromApi,
-                      child: const Text('Обновить список моделей'),
-                    ),
-                  ],
-                );
-              }
-              final model = controller.selectedModel;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ElevatedButton(
-                    onPressed: () async {
-                      final selected = await Get.to<String>(() => const ModelSelectPage());
-                      if (selected != null) controller.selectModel(selected);
-                    },
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            model?.name ?? 'Выбрать модель',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        const Icon(CupertinoIcons.right_chevron, size: 18),
-                      ],
+              if (models.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Text(
+                      'Нет доступных моделей',
+                      style: TextStyle(color: Colors.red[700], fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  if (model != null)
-                    SizedBox(
-                      width: double.infinity,
-                      child: Card(
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(model.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                              const SizedBox(height: 8),
-                              Text('ID: ${model.id}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                              const SizedBox(height: 8),
-                              Text('Цена (ввод): ${model.priceInput}/M токенов'),
-                              Text('Цена (вывод): ${model.priceOutput}/M токенов'),
-                              Text('Контекст: ${model.context} токенов'),
-                            ],
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  selected != null
+                    ? GestureDetector(
+                        onTap: () async {
+                          final result = await Get.to<String>(() => const ModelSelectPage());
+                          if (result != null) controller.selectModel(result);
+                        },
+                        child: Card(
+                          margin: const EdgeInsets.only(top: 0),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(selected.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                                    ),
+                                    const Icon(Icons.chevron_right, color: Colors.grey),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text('ID: ${selected.id}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                const SizedBox(height: 8),
+                                Text('Цена (ввод): ${selected.priceInput}/M токенов'),
+                                Text('Цена (вывод): ${selected.priceOutput}/M токенов'),
+                                Text('Контекст: ${selected.context} токенов'),
+                              ],
+                            ),
                           ),
                         ),
+                      )
+                    : ListTile(
+                        title: const Text('Выбрать модель'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () async {
+                          final result = await Get.to<String>(() => const ModelSelectPage());
+                          if (result != null) controller.selectModel(result);
+                        },
                       ),
-                    ),
                 ],
               );
             }),
@@ -227,9 +222,16 @@ class ModelSelectPage extends GetView<SettingsController> {
               return ListView(
                 children: [
                   if (free.isNotEmpty) ...[
-                    const Padding(
-                      padding: EdgeInsets.only(top: 8, left: 16, bottom: 4),
-                      child: Text('Бесплатные', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, left: 16, bottom: 4),
+                      child: Text(
+                        'Бесплатные',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
                     ),
                     ...free.map((m) => ListTile(
                           title: Text(
@@ -246,22 +248,43 @@ class ModelSelectPage extends GetView<SettingsController> {
                         )),
                   ],
                   if (paid.isNotEmpty) ...[
-                    const Padding(
-                      padding: EdgeInsets.only(top: 16, left: 16, bottom: 4),
-                      child: Text('Платные', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16, left: 16, bottom: 4),
+                      child: Text(
+                        'Платные',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
                     ),
+                    if (controller.isDefaultKeyUsed)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+                        child: Text(
+                          'Для доступа к платным моделям введите свой API-ключ',
+                          style: TextStyle(color: Colors.orange[800], fontWeight: FontWeight.w500, fontSize: 14),
+                        ),
+                      ),
                     ...paid.map((m) => ListTile(
                           title: Text(
                             m.name,
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
+                            style: controller.isDefaultKeyUsed
+                                ? const TextStyle(color: Colors.grey)
+                                : null,
                           ),
                           subtitle: Text('ID: ${m.id}', style: const TextStyle(fontSize: 12)),
                           trailing: controller.selectedModelId.value == m.id
                               ? const Icon(Icons.check_circle, color: Colors.green)
                               : null,
-                          onTap: () => Get.back(result: m.id),
+                          onTap: controller.isDefaultKeyUsed
+                              ? null
+                              : () => Get.back(result: m.id),
                           selected: controller.selectedModelId.value == m.id,
+                          enabled: !controller.isDefaultKeyUsed,
                         )),
                   ],
                   if (free.isEmpty && paid.isEmpty)

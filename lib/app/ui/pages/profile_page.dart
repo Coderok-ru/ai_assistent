@@ -161,70 +161,99 @@ class _ProfilePageState extends State<ProfilePage> {
                         color: p.id == activePromptId
                             ? (isDark ? const Color(0xFF162033) : Colors.blue[50])
                             : null,
-                        child: ListTile(
-                          title: Row(
-                            children: [
-                              if (p.isSystem)
-                                const Icon(CupertinoIcons.shield, color: Colors.blue, size: 18),
-                              if (p.isSystem)
-                                const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  p.name,
-                                  style: TextStyle(
-                                    color: p.isSystem ? Colors.blue : null,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                            ],
-                          ),
-                          subtitle: Column(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(p.prompt, maxLines: 2, overflow: TextOverflow.ellipsis),
-                              if (p.role != null && p.role!.isNotEmpty)
-                                Text('Роль: ${p.role}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                            ],
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (p.id != null && p.id != activePromptId)
-                                IconButton(
-                                  icon: const Icon(CupertinoIcons.check_mark),
-                                  tooltip: 'Сделать активным',
-                                  onPressed: () => _setActivePrompt(p.id!),
+                              ListTile(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                title: Row(
+                                  children: [
+                                    if (p.isSystem)
+                                      const Icon(CupertinoIcons.shield, color: Colors.blue, size: 18),
+                                    if (p.isSystem)
+                                      const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        p.name,
+                                        style: TextStyle(
+                                          color: p.isSystem ? Colors.blue : Theme.of(context).colorScheme.primary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              IconButton(
-                                icon: const Icon(CupertinoIcons.pencil),
-                                tooltip: 'Редактировать',
-                                onPressed: () => _addOrEditPrompt(p),
-                              ),
-                              IconButton(
-                                icon: const Icon(CupertinoIcons.doc_on_doc),
-                                tooltip: 'Копировать',
-                                onPressed: () async {
-                                  await PromptStorage.savePrompt(PromptRole(
-                                    name: p.name + ' (копия)',
-                                    prompt: p.prompt,
-                                    role: p.role,
-                                    isActive: false,
-                                  ));
-                                  _loadPrompts();
-                                  if (Get.isRegistered<ChatController>()) {
-                                    Get.find<ChatController>().refreshRoles();
-                                  }
-                                },
-                              ),
-                              if (p.id != null)
-                                IconButton(
-                                  icon: const Icon(CupertinoIcons.delete),
-                                  tooltip: 'Удалить',
-                                  onPressed: () => _deletePrompt(p.id!),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      p.prompt,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
+                                    if (p.role != null && p.role!.isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 2),
+                                        child: Text(
+                                          'Роль: ${p.role}',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Theme.of(context).colorScheme.primary,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                  ],
                                 ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 8, right: 8, bottom: 4),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    if (p.id != null && p.id != activePromptId)
+                                      IconButton(
+                                        icon: const Icon(CupertinoIcons.check_mark),
+                                        tooltip: 'Сделать активным',
+                                        onPressed: () => _setActivePrompt(p.id!),
+                                      ),
+                                    IconButton(
+                                      icon: const Icon(CupertinoIcons.pencil),
+                                      tooltip: 'Редактировать',
+                                      onPressed: () => _addOrEditPrompt(p),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(CupertinoIcons.doc_on_doc),
+                                      tooltip: 'Копировать',
+                                      onPressed: () async {
+                                        await PromptStorage.savePrompt(PromptRole(
+                                          name: p.name + ' (копия)',
+                                          prompt: p.prompt,
+                                          role: p.role,
+                                          isActive: false,
+                                        ));
+                                        _loadPrompts();
+                                        if (Get.isRegistered<ChatController>()) {
+                                          Get.find<ChatController>().refreshRoles();
+                                        }
+                                      },
+                                    ),
+                                    if (p.id != null)
+                                      IconButton(
+                                        icon: const Icon(CupertinoIcons.delete),
+                                        tooltip: 'Удалить',
+                                        onPressed: () => _deletePrompt(p.id!),
+                                      ),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         ),

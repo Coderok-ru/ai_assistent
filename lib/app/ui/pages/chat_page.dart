@@ -20,6 +20,7 @@ class ChatPage extends GetView<ChatController> {
   Widget build(BuildContext context) {
     final TextEditingController textController = TextEditingController();
     final TextEditingController urlController = TextEditingController();
+    final FocusNode messageFocusNode = FocusNode();
     String? imageUrl;
     String? fileUrl;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -248,8 +249,10 @@ class ChatPage extends GetView<ChatController> {
                           ),
                           child: TextField(
                             controller: textController,
+                            focusNode: messageFocusNode,
                             minLines: 1,
                             maxLines: 4,
+                            autofocus: false,
                             decoration: const InputDecoration(
                               hintText: 'Введите сообщение...',
                               border: OutlineInputBorder(
@@ -266,7 +269,10 @@ class ChatPage extends GetView<ChatController> {
                               ),
                               contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                             ),
-                            onSubmitted: (value) => _send(controller, textController, imageUrl, fileUrl),
+                            onSubmitted: (value) {
+                              _send(controller, textController, imageUrl, fileUrl);
+                              messageFocusNode.unfocus();
+                            },
                           ),
                         ),
                       ),
@@ -285,7 +291,10 @@ class ChatPage extends GetView<ChatController> {
                         ),
                         child: IconButton(
                           icon: const Icon(CupertinoIcons.arrow_up_circle_fill, color: Colors.white),
-                          onPressed: () => _send(controller, textController, imageUrl, fileUrl),
+                          onPressed: () {
+                            _send(controller, textController, imageUrl, fileUrl);
+                            messageFocusNode.unfocus();
+                          },
                         ),
                       ),
                     ],

@@ -17,6 +17,8 @@ class ChatController extends GetxController {
   final ChatStorage _storage = ChatStorage();
   late final SettingsController _settingsController;
 
+  bool _resetHistoryForNextMessage = false;
+
   @override
   void onInit() {
     super.onInit();
@@ -35,8 +37,8 @@ class ChatController extends GetxController {
     if (chats.isNotEmpty) {
       currentChat.value = chats.first;
     } else {
-      if (_settingsController.apiKey.value.isEmpty) {
-        Get.snackbar('Требуется API-ключ', 'Пожалуйста, введите API-ключ в настройках', snackPosition: SnackPosition.TOP, duration: const Duration(seconds: 4));
+      if (_settingsController.effectiveApiKey.isEmpty) {
+        Get.snackbar('Ошибка', 'Не удалось получить API-ключ', snackPosition: SnackPosition.TOP, duration: const Duration(seconds: 4));
       } else {
         final PromptRole usedRole = roles.isNotEmpty ? roles.first : PromptRole(name: 'Без роли', prompt: '', isActive: false, isSystem: false);
         selectedRole.value = usedRole;
@@ -48,8 +50,8 @@ class ChatController extends GetxController {
   }
 
   void createChat({String? name, PromptRole? role, String? modelId, String? modelName}) {
-    if ((_settingsController.apiKey.value.isEmpty)) {
-      Get.snackbar('Требуется API-ключ', 'Пожалуйста, введите API-ключ в настройках', snackPosition: SnackPosition.TOP, duration: const Duration(seconds: 4));
+    if ((_settingsController.effectiveApiKey.isEmpty)) {
+      Get.snackbar('Ошибка', 'Не удалось получить API-ключ', snackPosition: SnackPosition.TOP, duration: const Duration(seconds: 4));
       return;
     }
     PromptRole usedRole;
@@ -133,8 +135,8 @@ class ChatController extends GetxController {
     String? imageUrl,
     String? fileUrl,
   }) async {
-    if (_settingsController.apiKey.value.isEmpty) {
-      Get.snackbar('Требуется API-ключ', 'Пожалуйста, введите API-ключ в настройках', snackPosition: SnackPosition.TOP, duration: const Duration(seconds: 4));
+    if (_settingsController.effectiveApiKey.isEmpty) {
+      Get.snackbar('Ошибка', 'Не удалось получить API-ключ', snackPosition: SnackPosition.TOP, duration: const Duration(seconds: 4));
       return;
     }
     if (currentChat.value == null) {
@@ -170,13 +172,14 @@ class ChatController extends GetxController {
     
     try {
       final aiMsg = await _provider.sendMessage(
-        text: text, 
-        imageUrl: imageUrl, 
+        text: text,
+        imageUrl: imageUrl,
         fileUrl: fileUrl,
         systemPrompt: currentChat.value!.rolePrompt,
         model: currentChat.value!.modelId,
-        history: currentChat.value!.messages.where((m) => !m.isUser || m != userMsg).toList(),
+        history: _resetHistoryForNextMessage ? [] : currentChat.value!.messages.where((m) => !m.isUser || m != userMsg).toList(),
       );
+      _resetHistoryForNextMessage = false;
       currentChat.value!.messages.add(aiMsg);
       final idx2 = chats.indexWhere((c) => c.id == currentChat.value!.id);
       if (idx2 != -1) {
@@ -223,6 +226,7 @@ class ChatController extends GetxController {
 
   Future<void> setChatRole(PromptRole role) async {
     if (currentChat.value == null) return;
+    final model = _settingsController.selectedModel;
     currentChat.value = Chat(
       id: currentChat.value!.id,
       name: currentChat.value!.name,
@@ -230,8 +234,8 @@ class ChatController extends GetxController {
       messages: currentChat.value!.messages,
       roleName: role.name,
       rolePrompt: role.prompt,
-      modelId: currentChat.value!.modelId,
-      modelName: currentChat.value!.modelName,
+      modelId: model?.id ?? _settingsController.selectedModelId.value,
+      modelName: model?.name ?? _settingsController.selectedModelId.value,
     );
     // Обновляем в списке чатов
     final idx = chats.indexWhere((c) => c.id == currentChat.value!.id);
@@ -240,6 +244,8 @@ class ChatController extends GetxController {
       _storage.saveChats(chats);
       update();
     }
+    // Флаг для отправки следующего сообщения без истории
+    _resetHistoryForNextMessage = true;
   }
 
   void renameChat(String chatId, String newName) {

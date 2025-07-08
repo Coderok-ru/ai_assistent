@@ -31,6 +31,11 @@ class SettingsController extends GetxController {
   final isLoadingModels = false.obs;
   final modelsError = ''.obs;
 
+  static const String defaultApiKey = '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';
+
+  bool get isDefaultKeyUsed => apiKey.value.isEmpty;
+  String get effectiveApiKey => apiKey.value.isNotEmpty ? apiKey.value : defaultApiKey;
+
   AiModelInfo? get selectedModel =>
       models.firstWhereOrNull((m) => m.id == selectedModelId.value);
 
@@ -38,6 +43,8 @@ class SettingsController extends GetxController {
       models.where((m) => m.isFree).toList()..sort((a, b) => a.name.compareTo(b.name));
   List<AiModelInfo> get paidModels =>
       models.where((m) => !m.isFree).toList()..sort((a, b) => a.name.compareTo(b.name));
+
+  List<AiModelInfo> get visibleModels => isDefaultKeyUsed ? freeModels : models;
 
   @override
   void onInit() {
@@ -77,7 +84,7 @@ class SettingsController extends GetxController {
       'https://openrouter.ai/api/v1/models',
       options: Options(
         headers: {
-          if (apiKey.value.isNotEmpty) 'Authorization': 'Bearer ${apiKey.value}',
+          if (effectiveApiKey.isNotEmpty) 'Authorization': 'Bearer 27$effectiveApiKey',
         },
       ),
     );
@@ -91,7 +98,6 @@ class SettingsController extends GetxController {
     )).toList();
     models.assignAll(_sortModels(loaded));
     await ModelStorage.saveModels(loaded);
-    // Если выбранная модель отсутствует — сбросить на первую
     if (selectedModelId.value.isEmpty || !models.any((m) => m.id == selectedModelId.value)) {
       selectedModelId.value = models.isNotEmpty ? models.first.id : '';
       await ModelStorage.saveSelectedModel(selectedModelId.value);
@@ -107,6 +113,9 @@ class SettingsController extends GetxController {
   void saveApiKey(String key) {
     apiKey.value = key;
     _box.write('apiKey', key);
+    if (key.isEmpty && freeModels.isNotEmpty) {
+      selectModel(freeModels.first.id);
+    }
   }
 
   void selectModel(String id) async {

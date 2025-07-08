@@ -2,10 +2,14 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:get_storage/get_storage.dart';
 import '../models/message.dart';
+import '../../controllers/settings_controller.dart';
+import 'package:get/get.dart';
 
 class ChatProvider {
   final Dio _dio = Dio();
   final _box = GetStorage();
+  final SettingsController _settingsController =
+      Get.isRegistered<SettingsController>() ? Get.find<SettingsController>() : Get.put(SettingsController());
 
   Future<Message> sendMessage({
     required String text,
@@ -15,7 +19,7 @@ class ChatProvider {
     String model = 'openai/gpt-4o',
     List<Message>? history,
   }) async {
-    final apiKey = _box.read('apiKey') ?? '';
+    final apiKey = _settingsController.effectiveApiKey;
     final hasAttachment = (imageUrl != null && imageUrl.isNotEmpty) || (fileUrl != null && fileUrl.isNotEmpty);
     final List<Map<String, dynamic>> messages = [];
 
