@@ -41,7 +41,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _loadCredits() async {
     setState(() { loadingCredits = true; error = null; });
     try {
-      final apiKey = settingsController.apiKey.value;
+      final apiKey = settingsController.effectiveApiKey;
       final dio = Dio();
       final response = await dio.get(
         'https://openrouter.ai/api/v1/credits',
@@ -104,7 +104,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final double? remaining = (credits != null && usage != null) ? (credits! - usage!) : null;
-    final apiKey = settingsController.apiKey.value;
+    final apiKey = settingsController.effectiveApiKey;
     final showBalance = apiKey.isNotEmpty && error == null;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(

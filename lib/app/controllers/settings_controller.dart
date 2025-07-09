@@ -31,7 +31,7 @@ class SettingsController extends GetxController {
   final isLoadingModels = false.obs;
   final modelsError = ''.obs;
 
-  static const String defaultApiKey = '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';
+  static const String defaultApiKey = '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';
 
   bool get isDefaultKeyUsed => apiKey.value.isEmpty;
   String get effectiveApiKey => apiKey.value.isNotEmpty ? apiKey.value : defaultApiKey;
@@ -84,7 +84,7 @@ class SettingsController extends GetxController {
       'https://openrouter.ai/api/v1/models',
       options: Options(
         headers: {
-          if (effectiveApiKey.isNotEmpty) 'Authorization': 'Bearer 27$effectiveApiKey',
+          if (effectiveApiKey.isNotEmpty) 'Authorization': 'Bearer $effectiveApiKey',
         },
       ),
     );
